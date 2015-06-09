@@ -9,6 +9,7 @@
   "author": "Joel Brandt <joelrbrandt@gmail.com>",
   "license": "MIT",
   "dependencies": {
+    "bluebird": "^2.9.27",
     "github": "^0.2.4"
   }
 }
