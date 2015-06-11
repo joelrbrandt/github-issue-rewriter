@@ -9,6 +9,8 @@ module.exports = {
     },
     username: "joerlrbrandt",
     password: "password",
-    repoUser: "joelrbrandt",
-    repoName: "github-issue-rewriter"
+    readOrg: "joelrbrandt",
+    readRepo: "github-issue-rewriter",
+    writeOrg: "iwehrman",
+    writeRepo: "github-issue-rewriter"
 };
