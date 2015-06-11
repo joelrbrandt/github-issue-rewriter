@@ -41,11 +41,11 @@
         });
     };
 
-    var getCommentPage = function (issue, page) {
+    var getCommentPage = function (issueNumber, page) {
         return _getComments({
             user: config.readOrg,
             repo: config.readRepo,
-            number: issue,
+            number: issueNumber,
             "per_page": COMMENTS_PER_PAGE,
             page: page
         });
@@ -62,11 +62,11 @@
         });    
     };
 
-    var createComment = function (issue, body) {
+    var createComment = function (issueNumber, body) {
         return _createIssue({
             user: config.writeOrg,
             repo: config.writeRepo,
-            number: issue,
+            number: issueNumber,
             body: body
         });    
     };
@@ -121,12 +121,20 @@
         return sanitizeText(comment.body);
     }
 
-    var createIssue = function (issue, comments) {
+    var writeIssue = function (issue) {
+        console.log("writing issue %d", issue.number);
 
+        console.log("issue:", getIssueBody(issue));
+
+        return Promise.delay(1000).return(issue);
     };
 
-    var writeIssues = function (issues) {
+    var writeComment = function (issue, comment) {
+        console.log("writing comment %d on issue %d", issue.number, comment.id);
 
+        console.log("comment:", getCommentBody(comment));
+
+        return Promise.delay(1000).return();
     };
 
     getIssues()
@@ -143,6 +151,13 @@
         .each(function (result) {
             console.log("Issue %d with %d comments", result.issue.number, result.comments.length);
 
-            return Promise.delay(3000);
-        });
+            return writeIssue(result.issue)
+                .then(function (createdIssue) {
+                    return Promise.resolve(result.comments)
+                        .each(writeComment.bind(null, createdIssue))
+                })
+        })
+        .then(function () {
+
+        })
 }());
