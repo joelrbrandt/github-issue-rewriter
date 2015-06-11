@@ -38,7 +38,7 @@
     var ISSUES_PER_PAGE = 100,
         COMMENTS_PER_PAGE = 100,
         MAX_CONCURRENCY = 6,
-        PULL_REQUEST_LABEL = "__PULL_REQUEST__";
+        PULL_REQUEST_LABEL = "Pull Request (Archived)";
 
     var config = require("./config"),
         Github = require("github"),
@@ -182,27 +182,20 @@
         return text;
     };
 
-    var getIssueBody = function (issue) {
+    var getBody = function (issue) {
         var body = sanitizeText(issue.body),
             user = issue.user.login,
-            created = issue["created_at"];
+            created = issue["created_at"],
+            url = issue["html_url"];
 
-        return body + "\n\n-- @" + user + " at " + created;
+        return body + "\n\n-- @" + user + " at [" + created + "](" + url + ")";
     };
-
-    var getCommentBody = function (comment) {
-        var body = sanitizeText(comment.body),
-            user = comment.user.login,
-            created = comment["created_at"];
-
-        return body + "\n\n-- @" + user + " at " + created;
-    }
 
     var writeIssue = function (issue) {
         console.log("writing issue %d", issue.number);
 
         var title = sanitizeText(issue.title),
-            body = getIssueBody(issue),
+            body = getBody(issue),
             closed = issue.state === "closed",
             assignee = issue.assignee && issue.assignee.login,
             labels = !issue.labels ? [] : issue.labels.map(function (label) {
@@ -211,7 +204,7 @@
             pullRequest = !!(issue["pull_request"]);
 
         if (pullRequest) {
-            labels.push("__PULL_REQUEST__");
+            labels.push(PULL_REQUEST_LABEL);
         }
 
         return createIssue(title, body, assignee, labels)
@@ -227,7 +220,7 @@
     var writeComment = function (issue, comment) {
         console.log("writing comment %d on issue %d", issue.number, comment.id);
 
-        var body = getCommentBody(comment);
+        var body = getBody(comment);
 
         return createComment(issue.number, body);
     };
