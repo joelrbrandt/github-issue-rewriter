@@ -170,6 +170,10 @@
         var urls = text.match(urlRE) || [];
 
         urls.forEach(function (url) {
+            if (url.indexOf("https://github.com") === 0) {
+                return;
+            }
+
             // The URL RE correctly matches trailing parentheses and brackets,
             // but Markdown uses these ambiguously as part of its own syntax.
             if (url[url.length - 1] === ")" || url[url.length - 1] === "]") {
