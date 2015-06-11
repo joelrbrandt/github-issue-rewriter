@@ -37,7 +37,8 @@
 
     var ISSUES_PER_PAGE = 100,
         COMMENTS_PER_PAGE = 100,
-        MAX_CONCURRENCY = 6;
+        MAX_CONCURRENCY = 6,
+        PULL_REQUEST_LABEL = "__PULL_REQUEST__";
 
     var config = require("./config"),
         Github = require("github"),
@@ -62,6 +63,7 @@
     var _repoIssues = Promise.promisify(api.issues.repoIssues, api.issues),
         _getComments = Promise.promisify(api.issues.getComments, api.issues),
         _createIssue = Promise.promisify(api.issues.create, api.issues),
+        _editIssue = Promise.promisify(api.issues.edit, api.issues),
         _createComment = Promise.promisify(api.issues.createComment, api.issues);
 
     var getIssuePage = function (page) {
@@ -70,6 +72,7 @@
             repo: config.readRepo,
             state: "all",
             direction: "asc",
+            sort: "created",
             "per_page": ISSUES_PER_PAGE,
             page: page
         });
@@ -86,23 +89,43 @@
     };
 
     var createIssue = function (title, body, assignee, labels) {
-        return _createIssue({
+        var msg = {
             user: config.writeOrg,
             repo: config.writeRepo,
             title: title,
             body: body,
-            assignee: assignee,
             labels: labels
-        });    
+        };
+
+        if (assignee) {
+            msg.assignee = assignee;
+        }
+
+        console.log("creating issue", JSON.stringify(msg, null, "  "));
+
+        return _createIssue(msg);
+    };
+
+    var closeIssue = function (issueNumber) {
+        return _editIssue({
+            user: config.writeOrg,
+            repo: config.writeRepo,
+            number: issueNumber,
+            state: "closed"
+        });
     };
 
     var createComment = function (issueNumber, body) {
-        return _createIssue({
+        var msg = {
             user: config.writeOrg,
             repo: config.writeRepo,
             number: issueNumber,
             body: body
-        });    
+        };
+
+        console.log("creating comment", JSON.stringify(msg, null, "  "));
+
+        return _createComment(msg);
     };
 
     var getIssues = function () {
@@ -160,27 +183,53 @@
     };
 
     var getIssueBody = function (issue) {
-        return sanitizeText(issue.body);
+        var body = sanitizeText(issue.body),
+            user = issue.user.login,
+            created = issue["created_at"];
+
+        return body + "\n\n-- @" + user + " at " + created;
     };
 
     var getCommentBody = function (comment) {
-        return sanitizeText(comment.body);
+        var body = sanitizeText(comment.body),
+            user = comment.user.login,
+            created = comment["created_at"];
+
+        return body + "\n\n-- @" + user + " at " + created;
     }
 
     var writeIssue = function (issue) {
         console.log("writing issue %d", issue.number);
 
-        console.log("issue:", getIssueBody(issue));
+        var title = sanitizeText(issue.title),
+            body = getIssueBody(issue),
+            closed = issue.state === "closed",
+            assignee = issue.assignee && issue.assignee.login,
+            labels = !issue.labels ? [] : issue.labels.map(function (label) {
+                return label.name;
+            }),
+            pullRequest = !!(issue["pull_request"]);
 
-        return Promise.delay(1000).return(issue);
+        if (pullRequest) {
+            labels.push("__PULL_REQUEST__");
+        }
+
+        return createIssue(title, body, assignee, labels)
+            .then(function (issue) {
+                if (closed) {
+                    return closeIssue(issue.number).return(issue);
+                } else {
+                    return issue;
+                }
+            })
     };
 
     var writeComment = function (issue, comment) {
         console.log("writing comment %d on issue %d", issue.number, comment.id);
 
-        console.log("comment:", getCommentBody(comment));
+        var body = getCommentBody(comment);
 
-        return Promise.delay(1000).return();
+        return createComment(issue.number, body);
     };
 
     getIssues()
