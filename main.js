@@ -38,7 +38,8 @@
     var ISSUES_PER_PAGE = 100,
         COMMENTS_PER_PAGE = 100,
         MAX_CONCURRENCY = 6,
-        PULL_REQUEST_LABEL = "Pull Request (Archived)";
+        PULL_REQUEST_LABEL = "Pull Request (Archived)",
+        REPLACEMENT_URL = "http://f.cl.ly/items/233B0Y1o2h3D0x37232M/image-removed.png";
 
     var config = require("./config"),
         Github = require("github"),
@@ -164,7 +165,7 @@
         return getCommentsHelper(1);
     };
 
-    var REPLACEMENT_URL = "http://s.mlkshk.com/r/Y7SS";
+    var REPLACEMENT_URL = "http://f.cl.ly/items/233B0Y1o2h3D0x37232M/image-removed.png";
 
     var sanitizeText = function (text) {
         var urls = text.match(urlRE) || [];
@@ -219,6 +220,12 @@
                     return issue;
                 }
             })
+            .catch(function (err) {
+                console.log("Error creating issue:", issue && issue.message, issue && issue.stack);
+                return {
+                    number: issue.number
+                };
+            });
     };
 
     var writeComment = function (issue, comment) {
