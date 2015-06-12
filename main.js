@@ -39,7 +39,8 @@
         COMMENTS_PER_PAGE = 100,
         MAX_CONCURRENCY = 6,
         PULL_REQUEST_LABEL = "Pull Request (Archived)",
-        REPLACEMENT_URL = "http://f.cl.ly/items/233B0Y1o2h3D0x37232M/image-removed.png";
+        REPLACEMENT_URL = "http://f.cl.ly/items/233B0Y1o2h3D0x37232M/image-removed.png",
+        ISSUE_START = 0;
 
     var config = require("./config"),
         Github = require("github"),
@@ -162,10 +163,12 @@
                 });
         };
 
+        if (issue.number < ISSUE_START) {
+            return Promise.resolve([]);
+        }
+
         return getCommentsHelper(1);
     };
-
-    var REPLACEMENT_URL = "http://f.cl.ly/items/233B0Y1o2h3D0x37232M/image-removed.png";
 
     var sanitizeText = function (text) {
         var urls = text.match(urlRE) || [];
@@ -250,13 +253,20 @@
         .each(function (result) {
             console.log("Issue %d with %d comments", result.issue.number, result.comments.length);
 
-            return writeIssue(result.issue)
+            if (result.issue.number < ISSUE_START) {
+                return Promise.resolve();
+            }
+
+            return Promise.delay(50)
+                .then(function () {
+                    return writeIssue(result.issue)
+                })
                 .then(function (createdIssue) {
                     return Promise.resolve(result.comments)
                         .each(writeComment.bind(null, createdIssue))
-                })
+                });
         })
         .then(function () {
-
-        })
+            console.log("all done!");
+        });
 }());
